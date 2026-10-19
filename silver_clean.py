@@ -12,17 +12,18 @@ df = df.withColumn("invalid_trip_time", F.col("tpep_dropoff_datetime") < F.col("
 df = df.withColumn("negative_fare", F.col("fare_amount") < 0)
 df = df.withColumn("negative_total", F.col("total_amount") < 0)
 df = df.withColumn("zero_distance", F.col("trip_distance") == 0)
+df = df.withColumn("distance_outlier", F.col("trip_distance") > 100)
 df = df.withColumn("pickup_outside_2025", F.year("tpep_pickup_datetime") != 2025)
 
 df = df.withColumn("pickup_month", F.date_format("tpep_pickup_datetime", "yyyy_MM"))
 
-df.write.mode("overwrite").partitionBy("pickup_month").parquet("/work/data/silver/yellow_taxi")
+df.write.mode("overwrite").partitionBy("pickup_month").parquet("/tmp/silver/yellow_taxi")
 
-silver = spark.read.parquet("/work/data/silver/yellow_taxi")
+silver = spark.read.parquet("/tmp/silver/yellow_taxi")
 print("Rows in silver:", silver.count())
 
 for name in ["is_flex_fare", "invalid_trip_time", "negative_fare",
-             "negative_total", "zero_distance", "pickup_outside_2025"]:
+             "negative_total", "zero_distance", "distance_outlier", "pickup_outside_2025"]:
     print(name, silver.filter(F.col(name)).count())
 
 silver.groupBy("pickup_month").count().orderBy("pickup_month").show(20)
